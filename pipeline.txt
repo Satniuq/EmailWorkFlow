@@ -1,0 +1,18 @@
+Email cru
+ → EmailNormalizer
+   → NormalizedEmail
+     → Continuidade heurística (memória)
+         → attach_existing
+             → RulesEngine.handle_event
+     → (se não houver continuidade)
+         → ClassificationService
+             → attach_existing
+                 → RulesEngine.handle_event
+             → create_new
+                 → criar Case (NEW)
+                 → RulesEngine.handle_event
+             → ask_user
+                 → pending_classification
+                 → ClassificationPortal
+                 → decisão humana
+                 → RulesEngine.handle_event

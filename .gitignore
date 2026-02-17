@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+workflow.db
+*.sqlite
+*.sqlite3
