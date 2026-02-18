@@ -1,3 +1,5 @@
+# models/enums.py
+
 from enum import Enum, auto
 
 class WorkStatus(Enum):

@@ -1,278 +1,156 @@
-Tu já tens um processador automático de workflow.
-O que falta não é inteligência, é visibilidade e intervenção humana mínima.
+Manifesto do Sistema de Workflow
+1. O que este sistema é
 
-Hoje o sistema já faz:
+Este sistema é um processador automático de workflow ao longo do tempo.
 
-ingestão automática de email
+Não é um gestor de emails.
+Não é um gestor de tarefas.
+Não é um CRM.
 
-distinção pessoal / ambíguo / profissional
+É um sistema que interpreta comunicação, mantém memória, evolui casos e orquestra decisões, com intervenção humana mínima e valiosa.
 
-criação e evolução de casos
+2. Princípio fundamental
 
-timeline unificada
+A inteligência já existe.
+O problema nunca foi decidir.
+O problema é saber quando intervir.
 
-regras de atenção
+O sistema existe para:
 
-regras de billing
+decidir sozinho sempre que possível
 
-decisão humana só quando há valor
+calar-se quando não há valor
 
-silêncio quando não há
+chamar o humano apenas quando há incerteza, risco ou valor económico real
 
-Ou seja:
+3. O workflow é o produto
 
-o workflow já existe
-o dashboard é o painel de controlo desse workflow.
+O workflow não é algo a construir.
+O workflow já existe.
 
-2️⃣ O erro clássico a evitar (importante)
+O sistema:
 
-❌ Pensar no dashboard como:
+ingere comunicação automaticamente
 
-“lista de emails”
+normaliza e interpreta
 
-“lista de tarefas”
+liga a casos existentes ou cria novos
 
-“lista de casos”
+aplica regras de atenção, prioridade e billing
 
-Isso mata tudo o que construíste.
+mantém uma timeline unificada e explicável
 
-O teu sistema não é uma ferramenta de listagem.
-É um orquestrador de decisões ao longo do tempo.
+O dashboard não cria o workflow.
+O dashboard torna o workflow visível e navegável.
 
-Logo:
+4. O papel do humano
 
-O dashboard não mostra tudo.
-Mostra o que interessa agora — e dá acesso ao resto.
+O humano não é operador.
+O humano é árbitro pontual.
 
-3️⃣ O dashboard como “mapa do jogo”
+O sistema pede intervenção humana apenas quando:
 
-A melhor metáfora para o teu dashboard não é:
+há ambiguidade real
 
-inbox
+há decisão estrutural
 
-kanban
+há valor económico a capturar
 
-todo list
+Toda a decisão humana entra no sistema como evento, sujeita a regras, memória e consequências.
 
-É isto:
+5. Silêncio é uma funcionalidade
 
-🎮 Mapa do jogo do dia / da semana
+Se não há nada para decidir, o sistema deve estar silencioso.
 
-Ele responde a quatro perguntas humanas fundamentais:
+Backlogs infinitos são um erro de design.
+Listas que pedem atenção por existir são ruído.
 
-4️⃣ As 4 perguntas que o dashboard deve responder
-🧠 1. “Há algo que precise de mim AGORA?”
+O sistema não cria culpa.
+Cria clareza.
 
-➡️ AttentionPortal
+6. O dashboard não é um local de execução
 
-atrasos
+O dashboard não é:
 
-estagnação
+um inbox
 
-coisas bloqueadas
+uma lista de tarefas
 
-follow-ups implícitos
+um local para escrever emails
 
-Isto já tens.
+um local para micro-gestão
 
-O dashboard:
+O dashboard é um painel de controlo de decisões no tempo.
 
-não mostra tudo
+Execução acontece fora:
 
-mostra alertas contextualizados
+responder a um email
 
-sem culpa
+fazer uma chamada
 
-sem backlog infinito
+escrever uma nota
 
-💰 2. “Há valor a capturar?”
+Depois, a execução regressa ao sistema como evento.
 
-➡️ BillingPortal
+7. As quatro perguntas humanas
 
-trabalho já feito
+O dashboard existe para responder apenas a estas perguntas:
 
-actividade suficiente
+Há algo que precise de mim agora?
+(atenção, bloqueios, estagnação)
 
-pergunta clara: faturar ou não?
+Há valor a capturar?
+(billing claro, decisão rápida)
 
-Isto já tens.
+Há algo que o sistema não tem a certeza?
+(classificação, ligações frágeis)
 
-O dashboard aqui é:
+Se eu quiser ver algo, onde está?
+(exploração, confiança, explicabilidade)
 
-swipe
+Tudo o resto é secundário.
 
-decisão
+8. Profundidade, não ruído
 
-acabou
+O sistema organiza-se por camadas de profundidade, não por listas operacionais.
 
-🧩 3. “Há algo que o sistema não tem a certeza?”
+Agora
 
-➡️ ClassificationPortal
+Orientação
 
-ambiguidade
+Caso
 
-ligações frágeis
+Relações
 
-decisões estruturais
+Nada é imposto.
+Tudo é acessível.
 
-Isto já tens.
+9. Estados, não cliques
 
-O dashboard:
+Este sistema pensa em:
 
-não te pergunta tudo
+estados
 
-pergunta só quando o sistema hesita
+eventos
 
-📂 4. “Se eu quiser VER algo, onde está?”
+consequências
 
-➡️ Exploração / Inspector
+tempo
 
-Aqui entramos no que falta mostrar, não no que falta saber.
+Não em:
 
-5️⃣ O que o dashboard PODE mostrar (sem estragar nada)
+cliques
 
-Agora vamos pensar em camadas de profundidade, não em ecrãs.
+ecrãs
 
-🟢 Camada 0 — “Hoje”
+checklists
 
-Isto é o que o dashboard abre por defeito.
+Cada decisão muda o estado de algo real.
+Nada é descartável.
 
-Attention
+10. Regra final
 
-Billing
+Se uma funcionalidade aumenta visibilidade sem aumentar ruído, é boa.
+Se aumenta ruído, mesmo que pareça útil, está errada.
 
-Classification
-
-👉 já existe
-👉 já funciona
-👉 já é silencioso quando deve
-
-🟡 Camada 1 — “O que existe?”
-
-Aqui entram listas navegáveis, não listas operacionais.
-
-Exemplos:
-
-Todos os Cases
-
-Casos por prioridade
-
-Casos por cliente
-
-Casos pessoais vs profissionais
-
-⚠️ Importante:
-
-Isto não é para trabalhar.
-É para orientação e confiança.
-
-🟠 Camada 2 — “Abrir um Caso”
-
-Aqui entra o Case Inspector.
-
-Quando abres um caso, vês:
-
-resumo (status, prioridade, flags)
-
-timeline completa
-
-emails
-
-tasks
-
-billing
-
-decisões passadas
-
-Isto responde à pergunta:
-
-“o que é que aconteceu aqui?”
-
-🔵 Camada 3 — “Relações”
-
-Aqui começa o nível workflow real.
-
-Cliente → vários casos
-
-Histórico de interações
-
-Padrões (ex.: sempre acaba em billing?)
-
-Relação contínua, não tickets isolados
-
-Aqui entra a entidade Client, mas só aqui.
-
-6️⃣ O que o dashboard NÃO deve fazer
-
-Isto é tão importante quanto o resto.
-
-❌ Não deve ser:
-
-lugar onde se escreve emails longos
-
-lugar onde se micro-gerem tarefas
-
-lugar onde se “processa correio”
-
-O dashboard não é o local de execução.
-É o local de decisão e orientação.
-
-Execução pode ser:
-
-responder email (cliente de email)
-
-escrever nota
-
-fazer chamada
-
-Depois:
-➡️ volta para o sistema como evento.
-
-7️⃣ O que falta para ser “processador automático de workflow”
-
-Agora a pergunta-chave que fizeste.
-
-Já tens:
-
-ingestão
-
-classificação
-
-decisão
-
-memória
-
-regras
-
-silêncio
-
-Falta apenas:
-🔧 A) Views consistentes
-
-Case list
-
-Case inspector
-
-Client overview
-
-Nada disto mexe em lógica.
-
-🔧 B) Uma ou duas regras de promoção
-
-Exemplo:
-
-LOW → NORMAL quando há X sinais
-
-ambíguo → profissional quando há resposta tua
-
-Isto é afinação, não fundação.
-
-🔧 C) Persistência (quando quiseres)
-
-Para:
-
-replay
-
-histórico longo
-
-confiança total
+Este sistema existe para reduzir carga cognitiva, não para a redistribuir.

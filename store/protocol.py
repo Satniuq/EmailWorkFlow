@@ -43,11 +43,9 @@ class StoreProtocol(Protocol):
     # -------------------------
 
     def add_billing_record(
-        self,
-        case: Case,
-        decision: BillingDecision,
-        context: Optional[dict] = None,
-    ) -> BillingRecord: ...
+        self, 
+        record: BillingRecord) -> None: ...
+
 
     def list_billing_records(
         self,

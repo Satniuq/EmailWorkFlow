@@ -1,0 +1,182 @@
+DASHBOARD — PIPELINE LÓGICO
+
+O Dashboard NÃO é um local de trabalho.
+É um painel de decisão e orientação.
+
+Ele NÃO executa lógica de negócio.
+Ele LÊ o estado do sistema e permite decisões humanas mínimas.
+
+--------------------------------------------------
+1. PRINCÍPIO FUNDAMENTAL
+--------------------------------------------------
+
+O Dashboard responde apenas a quatro perguntas humanas:
+
+1. Há algo que precise de mim AGORA?
+2. Há valor a capturar?
+3. Há algo que o sistema não tem a certeza?
+4. Se eu quiser ver algo, onde está?
+
+Se nenhuma destas perguntas tiver resposta:
+→ o dashboard fica silencioso.
+
+--------------------------------------------------
+2. FONTE ÚNICA DE VERDADE
+--------------------------------------------------
+
+O Dashboard NUNCA calcula regras.
+
+Ele apenas consulta:
+- Cases
+- AttentionFlags
+- ActivitySummary
+- Pending Classifications
+- BillingRecords
+
+Toda a lógica já aconteceu no RulesEngine.
+
+--------------------------------------------------
+3. CAMADA 0 — ABERTURA (DEFAULT)
+--------------------------------------------------
+
+Ao abrir o Dashboard:
+
+Carrega os Decision Portals activos:
+
+- AttentionPortal
+- BillingPortal
+- ClassificationPortal
+
+Cada portal:
+- só mostra cartões activos
+- se não houver cartões → não aparece
+
+Não há “estado vazio”.
+Ausência de portal = silêncio válido.
+
+--------------------------------------------------
+4. ATTENTION PORTAL
+--------------------------------------------------
+
+Fonte:
+- Cases com AttentionFlags activas
+
+Mostra apenas:
+- OVERDUE
+- STALE
+- outros flags futuros
+
+Cada cartão:
+- descreve o problema
+- explica o contexto
+- oferece uma acção mínima (ou nenhuma)
+
+Exemplos de acções:
+- abrir o caso
+- marcar como resolvido
+- responder por email (fora do dashboard)
+
+O portal:
+- NÃO lista tudo
+- NÃO cria tarefas
+- NÃO força decisões
+
+--------------------------------------------------
+5. BILLING PORTAL
+--------------------------------------------------
+
+Fonte:
+- Cases com AttentionFlag.BILLING_PENDING
+
+Cada cartão responde a:
+“Há valor aqui?”
+
+Acções possíveis (humanas):
+- FATURAR
+- NÃO FATURAR
+- ADIAR
+
+Cada acção:
+→ dispara USER_ACTION
+→ entra no RulesEngine
+→ fecha o ciclo
+
+Após decisão:
+- o cartão desaparece
+- não reaparece sem actividade nova
+
+--------------------------------------------------
+6. CLASSIFICATION PORTAL
+--------------------------------------------------
+
+Fonte:
+- pending_classifications do IngestionService
+
+Mostra apenas quando:
+- o sistema não tem confiança suficiente
+
+Cada cartão permite:
+- associar a caso existente
+- criar novo caso
+- descartar
+
+Cada decisão:
+→ dispara USER_ACTION
+→ cria ou associa caso
+→ entra no RulesEngine
+
+--------------------------------------------------
+7. SILÊNCIO COMO RESULTADO NORMAL
+--------------------------------------------------
+
+Se nenhum portal tiver cartões:
+
+O Dashboard mostra:
+✔️ “Tudo em ordem. Nenhuma decisão necessária.”
+
+Não há:
+- backlog
+- culpa
+- notificações artificiais
+- listas infinitas
+
+Silêncio significa:
+→ o sistema está alinhado com a realidade.
+
+--------------------------------------------------
+8. EXPLORAÇÃO (FORA DO FLUXO DE DECISÃO)
+--------------------------------------------------
+
+Listas e navegação existem apenas para consulta:
+
+- Todos os Cases
+- Casos por cliente
+- Casos arquivados
+- Histórico completo
+
+Estas vistas:
+- NÃO disparam regras
+- NÃO criam eventos
+- NÃO pedem decisões
+
+Servem apenas para:
+“ver o que existe”
+
+--------------------------------------------------
+9. REGRA DE OURO DO DASHBOARD
+--------------------------------------------------
+
+O Dashboard:
+
+- NÃO gere trabalho
+- NÃO executa acções longas
+- NÃO duplica lógica
+
+Ele apenas:
+- mostra o que interessa agora
+- permite uma decisão humana
+- devolve o controlo ao sistema
+
+--------------------------------------------------
+FIM DO PIPELINE
+--------------------------------------------------

@@ -114,31 +114,13 @@ class InMemoryStore:
     # BILLING
     # ------------------------------------------------------------------
 
-    def add_billing_record(
-        self,
-        case: Case,
-        decision: BillingDecision,
-        context: Optional[dict] = None,
-    ) -> BillingRecord:
+    def add_billing_record(self, record: BillingRecord) -> None:
         """
-        Regista uma decisão de faturação.
+        Guarda um registo de faturação.
+        Não cria decisões, não aplica regras.
         """
-
-        record = BillingRecord(
-            id=str(uuid4()),
-            case_id=case.id,
-            client_id=case.client_id,
-            decision=decision,
-            decided_at=datetime.utcnow(),
-            context=context or {},
-        )
-
         self._billing_records.append(record)
 
-        # Marcar que já não está pendente
-        case.attention_flags.discard(AttentionFlag.BILLING_PENDING)
-
-        return record
 
     def list_billing_records(self, case_id: Optional[str] = None) -> List[BillingRecord]:
         """

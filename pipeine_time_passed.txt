@@ -1,0 +1,135 @@
+TIME_PASSED — PIPELINE LÓGICO
+
+TIME_PASSED representa a passagem do tempo
+sem qualquer acção humana ou externa.
+
+É o único evento que:
+- não vem de um utilizador
+- não vem de um email
+- não vem do sistema externo
+- vem apenas do relógio
+
+--------------------------------------------------
+1. O QUE É TIME_PASSED
+--------------------------------------------------
+
+TIME_PASSED é um evento sintético que indica:
+“o tempo avançou até agora”.
+
+Não representa um acontecimento.
+Representa CONTEXTO.
+
+--------------------------------------------------
+2. QUANDO É DISPARADO
+--------------------------------------------------
+
+TIME_PASSED pode ser disparado:
+
+- periodicamente (cron / scheduler)
+- ao abrir o dashboard
+- ao iniciar a aplicação
+- antes de calcular portais
+
+Não precisa de alta frequência.
+1x por dia é suficiente para a maioria das regras.
+
+--------------------------------------------------
+3. COMO É DISPARADO
+--------------------------------------------------
+
+Para cada Caso activo:
+
+→ RulesEngine.handle_event(
+      case,
+      event_type=TIME_PASSED,
+      event_context={},
+      now=current_time
+  )
+
+TIME_PASSED:
+- NÃO cria CaseItem
+- NÃO altera estado directamente
+- NÃO cria decisões humanas
+
+--------------------------------------------------
+4. O QUE ACONTECE NO RULES ENGINE
+--------------------------------------------------
+
+Pipeline completo aplica-se:
+
+1️⃣ Registo factual
+    - TIME_PASSED não cria item
+
+2️⃣ State Machine
+    - Pode mover estados dependentes do tempo
+      ex: WAITING_REPLY → IN_PROGRESS
+
+3️⃣ Semântica do evento
+    - Pode activar regras temporais
+    - ex: prazo expirado
+
+4️⃣ Regras de atenção
+    - OVERDUE
+    - STALE
+
+5️⃣ Regras de billing
+    - Avaliação baseada em actividade recente
+    - Nunca cria decisões humanas
+
+--------------------------------------------------
+5. REGRAS TÍPICAS BASEADAS NO TEMPO
+--------------------------------------------------
+
+OVERDUE
+- se now > case.due_at
+
+STALE
+- se última actividade > N dias
+
+FOLLOW-UP
+- NÃO é criado por TIME_PASSED
+- FOLLOW-UP nasce apenas de acções humanas
+  (ex: EMAIL_OUTBOUND)
+
+Billing:
+- TIME_PASSED pode REVELAR billing pendente
+- nunca cria billing automaticamente
+
+--------------------------------------------------
+6. RELAÇÃO COM O DASHBOARD
+--------------------------------------------------
+
+TIME_PASSED prepara o sistema para o Dashboard.
+
+O Dashboard:
+- NÃO calcula atrasos
+- NÃO calcula estagnação
+- apenas lê AttentionFlags
+
+Ao abrir o Dashboard:
+→ TIME_PASSED já correu
+→ o estado reflecte o tempo actual
+
+--------------------------------------------------
+7. SILÊNCIO E TEMPO
+--------------------------------------------------
+
+Se o tempo passar e:
+- não houver prazos
+- não houver estagnação
+- não houver valor novo
+
+→ nada acontece.
+
+O sistema não cria ruído só porque o tempo passou.
+
+--------------------------------------------------
+8. REGRA FUNDAMENTAL
+--------------------------------------------------
+
+TIME_PASSED nunca cria trabalho.
+Apenas revela trabalho que ficou pendente.
+
+--------------------------------------------------
+FIM DO PIPELINE
+--------------------------------------------------

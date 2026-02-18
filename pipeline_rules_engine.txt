@@ -1,0 +1,141 @@
+RULES ENGINE — PIPELINE LÓGICO
+
+Qualquer acontecimento relevante no sistema
+(entra como evento)
+PASSA SEMPRE por este pipeline.
+
+--------------------------------------------------
+1. ENTRADA
+--------------------------------------------------
+
+INPUT:
+- Case
+- EventType
+- EventContext
+- Timestamp (now)
+
+Exemplos de eventos:
+- EMAIL_INBOUND
+- EMAIL_OUTBOUND
+- USER_ACTION
+- SYSTEM_ACTION
+- TIME_PASSED
+
+--------------------------------------------------
+2. REGISTO FACTUAL (FACTOS, NÃO DECISÕES)
+--------------------------------------------------
+
+O evento é convertido num CaseItem.
+
+Regras:
+- EMAIL_* → CaseItem.EMAIL
+- USER_ACTION → CaseItem.NOTE
+- SYSTEM_ACTION → CaseItem.NOTE (system=True)
+- TIME_PASSED → NÃO cria item
+
+Nada é interpretado aqui.
+Nada é decidido aqui.
+Apenas se regista o que aconteceu.
+
+--------------------------------------------------
+3. TRANSIÇÃO DE ESTADO (STATE MACHINE)
+--------------------------------------------------
+
+O CaseStateMachine recebe:
+- estado actual do Caso
+- tipo de evento
+
+Pode:
+- mudar o estado
+- não fazer nada
+- lançar erro (transição inválida)
+
+Regras:
+- Só a State Machine pode alterar `case.status`
+- Nenhuma outra parte do sistema altera estados
+
+--------------------------------------------------
+4. SEMÂNTICA DO EVENTO (SIGNIFICADO IMEDIATO)
+--------------------------------------------------
+
+Cada EventType tem uma especificação semântica.
+
+A semântica pode provocar efeitos directos no Caso,
+mas nunca decisões humanas.
+
+Exemplos de semântica:
+
+- RESOLVE_OVERDUE
+    → remover due_at passado
+    → ex: EMAIL_OUTBOUND
+
+- FOLLOW_UP
+    → criar due_at futuro (se não existir)
+    → ex: EMAIL_OUTBOUND
+
+- BILLING_DECISION
+    → registar BillingRecord
+    → fechar ciclo de billing
+    → ex: USER_ACTION
+
+Nota:
+- Semântica é local ao evento
+- Não olha para histórico longo
+- Não cria perguntas
+
+--------------------------------------------------
+5. REGRAS DE ATENÇÃO (PERGUNTAS AO UTILIZADOR)
+--------------------------------------------------
+
+O sistema decide se algo merece atenção AGORA.
+
+Flags possíveis:
+- OVERDUE
+- STALE
+- BILLING_PENDING
+
+Regras:
+
+- OVERDUE
+    se now > case.due_at
+
+- STALE
+    se última actividade > 7 dias
+
+- BILLING_PENDING
+    se actividade recente significativa
+    E caso for faturável
+    E não houver decisão de billing neste evento
+
+As flags:
+- não mudam estados
+- não executam acções
+- apenas sinalizam atenção
+
+--------------------------------------------------
+6. SILÊNCIO COMO ESTADO VÁLIDO
+--------------------------------------------------
+
+Se nenhuma flag estiver activa:
+→ o sistema fica silencioso.
+
+Silêncio significa:
+- nenhuma decisão necessária
+- nenhum cartão no dashboard
+- nenhum alerta
+
+Silêncio NÃO é erro.
+Silêncio é sucesso.
+
+--------------------------------------------------
+7. REGRA FUNDAMENTAL
+--------------------------------------------------
+
+- O sistema pergunta quando não sabe.
+- O utilizador responde uma vez.
+- A resposta fecha o ciclo.
+- O sistema cala-se até algo novo acontecer.
+
+--------------------------------------------------
+FIM DO PIPELINE
+--------------------------------------------------

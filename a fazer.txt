@@ -1,0 +1,19 @@
+
+
+🔧 3. Alinhamento BillingEngine ↔ BillingPortal
+
+Agora que vês:
+
+quando o motor acende
+
+quando o portal mostra
+
+Podes decidir:
+
+o portal mostra flags
+
+ou mostra records
+
+ou mostra ambos
+
+Isto é política, não engenharia.

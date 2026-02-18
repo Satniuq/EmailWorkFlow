@@ -20,11 +20,16 @@ from model.enums import (
     AttentionFlag,
     CaseItemKind,
     Priority,
+    BillingDecision
 )
-from model.entities import Case
+from model.entities import Case, BillingRecord
+from model.events import CASE_EVENTS, EventSemantic
 from state_machine.case_state_machine import CaseStateMachine
 from store.protocol import StoreProtocol
 from services.clock import Clock
+from uuid import uuid4
+
+FOLLOW_UP_DAYS = 7
 
 
 class RulesEngine:
@@ -32,36 +37,19 @@ class RulesEngine:
     Cérebro automático do sistema.
 
     Recebe eventos e:
+    - regista actividade factual
     - dispara a State Machine
-    - marca flags de atenção
-    - regista actividade
+    - aplica semântica do evento
+    - calcula atenção e billing
     """
+
     def __init__(self, store: StoreProtocol, state_machine: CaseStateMachine):
         self.store = store
         self.state_machine = state_machine
 
-
     # ------------------------------------------------------------------
-    # EVENTOS
+    # API PÚBLICA
     # ------------------------------------------------------------------
-
-    def _is_billable_case(self, case: Case) -> bool:
-        """
-        Determina se um Caso é elegível para faturação.
-        """
-
-        # Casos pessoais nunca são faturáveis
-        if case.priority == Priority.LOW:
-            return False
-
-        # Se já houve billing antes, é faturável
-        billing_records = self.store.list_billing_records(case.id)
-        if billing_records:
-            return True
-
-        # Casos normais ou urgentes são faturáveis por defeito
-        return case.priority in {Priority.NORMAL, Priority.HIGH, Priority.URGENT}
-
 
     def handle_event(
         self,
@@ -72,25 +60,77 @@ class RulesEngine:
     ) -> None:
         """
         Ponto único de entrada para eventos no sistema.
-
-        Qualquer coisa que 'aconteça' passa por aqui:
-        - emails
-        - ações do utilizador
-        - manutenção
         """
 
         now = now or Clock().now()
         event_context = event_context or {}
 
-        # 1️⃣ Registar actividade factual
+        # 1️⃣ Registo factual
         self._record_case_item(case, event_type, event_context, now)
 
-        # 2️⃣ Aplicar transição de estado (se existir)
+        # 2️⃣ Transição de estado
         self.state_machine.apply(case, event_type)
 
-        # 3️⃣ Aplicar regras derivadas
+        # 3️⃣ Semântica do evento
+        self._apply_event_semantics(case, event_type, event_context, now)
+
+        # 4️⃣ Regras de atenção (sempre)
         self._apply_attention_rules(case, now)
-        self._apply_billing_rules(case, now)
+
+        # 5️⃣ Regras de billing (SÓ se não for decisão humana)
+        spec = CASE_EVENTS[event_type.name]
+        if EventSemantic.BILLING_DECISION not in spec.semantics:
+            self._apply_billing_rules(case, now)
+
+
+    # ------------------------------------------------------------------
+    # SEMÂNTICA DOS EVENTOS
+    # ------------------------------------------------------------------
+
+    def _schedule_follow_up(self, case: Case, now: datetime) -> None:
+        """
+        Cria um novo lembrete implícito de acompanhamento.
+        Só se ainda não existir um due_at futuro.
+        """
+
+        if case.due_at and case.due_at > now:
+            # já existe follow-up agendado
+            return
+
+        case.due_at = now + timedelta(days=FOLLOW_UP_DAYS)
+
+
+    def _apply_event_semantics(
+        self,
+        case: Case,
+        event_type: CaseEventType,
+        event_context: dict,
+        now: datetime,
+    ) -> None:
+        """
+        Aplica efeitos semânticos do evento.
+        """
+
+        spec = CASE_EVENTS[event_type.name]
+
+        if EventSemantic.RESOLVE_OVERDUE in spec.semantics:
+            self._resolve_overdue(case, now)
+
+        if EventSemantic.FOLLOW_UP in spec.semantics:
+            self._schedule_follow_up(case, now)
+
+        if EventSemantic.BILLING_DECISION in spec.semantics:
+            self._apply_billing_decision(case, event_context, now)
+
+
+
+    def _resolve_overdue(self, case: Case, now: datetime) -> None:
+        """
+        Resolver atraso de forma tácita (ex: email enviado).
+        """
+
+        if case.due_at and now >= case.due_at:
+            case.due_at = None
 
     # ------------------------------------------------------------------
     # REGISTO FACTUAL
@@ -114,6 +154,7 @@ class RulesEngine:
             self.store.add_case_item(
                 case_id=case.id,
                 kind=CaseItemKind.EMAIL,
+                created_at=now,
                 metadata={
                     "direction": "inbound"
                     if event_type == CaseEventType.EMAIL_INBOUND
@@ -126,6 +167,7 @@ class RulesEngine:
             self.store.add_case_item(
                 case_id=case.id,
                 kind=CaseItemKind.NOTE,
+                created_at=now,
                 metadata=context,
             )
 
@@ -133,10 +175,11 @@ class RulesEngine:
             self.store.add_case_item(
                 case_id=case.id,
                 kind=CaseItemKind.NOTE,
+                created_at=now,
                 metadata={"system": True, **context},
             )
 
-        # TIME_PASSED não cria item: é contexto, não acontecimento
+        # TIME_PASSED não cria item
 
     # ------------------------------------------------------------------
     # REGRAS DE ATENÇÃO
@@ -144,7 +187,7 @@ class RulesEngine:
 
     def _apply_attention_rules(self, case: Case, now: datetime) -> None:
         """
-        Regras que determinam se algo merece atenção do utilizador.
+        Determina se algo merece atenção do utilizador.
         """
 
         # --- Atraso ---
@@ -152,10 +195,6 @@ class RulesEngine:
             case.attention_flags.add(AttentionFlag.OVERDUE)
         else:
             case.attention_flags.discard(AttentionFlag.OVERDUE)
-
-        # --- Mensagens não lidas (placeholder) ---
-        # Isto será refinado quando ligares email real
-        # Por agora, o simples facto de inbound recente já é sinal
 
         # --- Estagnação ---
         last_activity = self._last_activity_at(case)
@@ -168,17 +207,47 @@ class RulesEngine:
             else:
                 case.attention_flags.discard(AttentionFlag.STALE)
 
-
     # ------------------------------------------------------------------
     # REGRAS DE BILLING
     # ------------------------------------------------------------------
+
+    
+
+
+    def _apply_billing_decision(
+        self,
+        case: Case,
+        context: dict,
+        now: datetime,
+    ) -> None:
+        """
+        Regista uma decisão de faturação e fecha o ciclo.
+        """
+
+        decision = context.get("decision")
+        if not isinstance(decision, BillingDecision):
+            return  # defensivo
+
+        record = BillingRecord(
+            id=str(uuid4()),
+            case_id=case.id,
+            client_id=case.client_id,
+            decision=decision,
+            decided_at=now,
+            context=context,
+        )
+
+        self.store.add_billing_record(record)
+
+        # fechar sugestão
+        case.attention_flags.discard(AttentionFlag.BILLING_PENDING)
+
 
     def _apply_billing_rules(self, case: Case, now: datetime) -> None:
         """
         Decide se há actividade que justifica sugerir faturação.
         """
 
-        # ❗ REGRA-CHAVE: só casos profissionais entram em billing
         if not self._is_billable_case(case):
             case.attention_flags.discard(AttentionFlag.BILLING_PENDING)
             return
@@ -195,9 +264,27 @@ class RulesEngine:
     # UTILITÁRIOS
     # ------------------------------------------------------------------
 
+    def _is_billable_case(self, case: Case) -> bool:
+        """
+        Determina se um Caso é elegível para faturação.
+        """
+
+        if case.priority == Priority.LOW:
+            return False
+
+        billing_records = self.store.list_billing_records(case.id)
+        if billing_records:
+            return True
+
+        return case.priority in {
+            Priority.NORMAL,
+            Priority.HIGH,
+            Priority.URGENT,
+        }
+
     def _last_activity_at(self, case: Case) -> datetime | None:
         """
-        Determina a última actividade registada num Caso.
+        Última actividade registada num Caso.
         """
 
         items = self.store.list_case_items(case.id)
