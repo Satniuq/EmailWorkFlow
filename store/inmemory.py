@@ -161,25 +161,4 @@ class InMemoryStore:
             elif item.kind == CaseItemKind.NOTE:
                 summary.notes += 1
 
-            elif item.kind == CaseItemKind.TASK:
-                if item.metadata.get("completed"):
-                    summary.tasks_completed += 1
-
         return summary
-
-    # ------------------------------------------------------------------
-    # ATTENTION FLAGS (derivados, nunca manuais)
-    # ------------------------------------------------------------------
-
-    def mark_overdue(self, case: Case) -> None:
-        """
-        Marca um Caso como atrasado.
-        Chamado pelo Rules Engine.
-        """
-        case.attention_flags.add(AttentionFlag.OVERDUE)
-
-    def mark_billing_pending(self, case: Case) -> None:
-        """
-        Indica que há actividade relevante que pode gerar faturação.
-        """
-        case.attention_flags.add(AttentionFlag.BILLING_PENDING)

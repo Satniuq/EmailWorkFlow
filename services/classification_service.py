@@ -31,11 +31,6 @@ class ClassificationResult:
     case_id: Optional[str]
     confidence: float
     rationale: str
-    action: str
-    # action:
-    # - "attach_existing"
-    # - "create_new"
-    # - "ask_user"
 
 
 class ClassificationService:
@@ -62,7 +57,6 @@ class ClassificationService:
                 case_id=None,
                 confidence=0.9,
                 rationale="Nenhum caso existente relevante encontrado.",
-                action="create_new",
             )
 
         scored = [
@@ -73,28 +67,12 @@ class ClassificationService:
         scored.sort(key=lambda x: x[1], reverse=True)
         best_case, best_score = scored[0]
 
-        # --- Decisões por thresholds ---
-        if best_score >= 0.8:
-            return ClassificationResult(
-                case_id=best_case.id,
-                confidence=best_score,
-                rationale="Correspondência forte com caso existente.",
-                action="attach_existing",
-            )
 
-        if best_score >= 0.4:
-            return ClassificationResult(
-                case_id=best_case.id,
-                confidence=best_score,
-                rationale="Correspondência moderada. Confirmação recomendada.",
-                action="ask_user",
-            )
 
         return ClassificationResult(
             case_id=None,
             confidence=best_score,
             rationale="Correspondência fraca com casos existentes.",
-            action="create_new",
         )
 
     # ------------------------------------------------------------------

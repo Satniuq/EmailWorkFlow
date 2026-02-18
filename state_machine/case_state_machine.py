@@ -74,65 +74,33 @@ class CaseStateMachine:
     # ------------------------------------------------------------------
 
     def _from_new(self, case: Case, event: CaseEventType) -> None:
-        """
-        Estado NEW:
-        Caso acabou de ser criado e ainda não foi analisado.
-        """
-
-        if event == CaseEventType.USER_ACTION:
-            # Utilizador pegou no caso
-            case.status = WorkStatus.IN_PROGRESS
-
-        elif event == CaseEventType.SYSTEM_ACTION:
-            # Sistema pode arquivar automaticamente casos irrelevantes
+        if event == CaseEventType.SYSTEM_ACTION:
             case.status = WorkStatus.ARCHIVED
-
         else:
-            # Outros eventos são ignorados
             return
+
 
     def _from_in_progress(self, case: Case, event: CaseEventType) -> None:
-        """
-        Estado IN_PROGRESS:
-        O trabalho está do lado do utilizador.
-        """
-
         if event == CaseEventType.EMAIL_OUTBOUND:
-            # Respondeste → estás à espera
             case.status = WorkStatus.WAITING_REPLY
 
-        elif event == CaseEventType.USER_ACTION:
-            # Utilizador marcou como concluído
-            case.status = WorkStatus.DONE
-
         elif event == CaseEventType.SYSTEM_ACTION:
-            # Sistema pode arquivar casos manualmente fechados
             case.status = WorkStatus.ARCHIVED
 
         else:
             return
 
-    def _from_waiting_reply(self, case: Case, event: CaseEventType) -> None:
-        """
-        Estado WAITING_REPLY:
-        Estás à espera de terceiros.
-        O tempo é relevante aqui.
-        """
 
+    def _from_waiting_reply(self, case: Case, event: CaseEventType) -> None:
         if event == CaseEventType.EMAIL_INBOUND:
-            # Recebeste resposta → a bola volta para ti
             case.status = WorkStatus.IN_PROGRESS
 
         elif event == CaseEventType.TIME_PASSED:
-            # Prazo expirou → volta para ti, mas com atraso (flag, não estado)
-            case.status = WorkStatus.IN_PROGRESS
-
-        elif event == CaseEventType.USER_ACTION:
-            # Utilizador decide avançar mesmo sem resposta
             case.status = WorkStatus.IN_PROGRESS
 
         else:
             return
+
 
     def _from_done(self, case: Case, event: CaseEventType) -> None:
         """

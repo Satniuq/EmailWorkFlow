@@ -5,7 +5,7 @@ Orquestrador do fluxo de entrada de e-mails no sistema.
 
 Responsabilidades:
 - normalizar e-mails
-- classificar automaticamente
+- avaliar e-mails automaticamente
 - criar / associar Casos
 - garantir continuidade quando plausível
 - disparar eventos no RulesEngine
@@ -15,11 +15,15 @@ Responsabilidades:
 from datetime import datetime
 from typing import List, Dict, Optional
 from uuid import uuid4
+from store.protocol import StoreProtocol
 
 from services.email_normalizer import EmailNormalizer, NormalizedEmail
-from services.classification_service import ClassificationService, ClassificationResult
+from services.classification_service import ClassificationService
+from portals.classification_decision import (
+    ClassificationDecisionEngine,
+    ClassificationDecision,
+)
 from rules.rules_engine import RulesEngine
-from store.inmemory import InMemoryStore
 from model.entities import Case
 from model.enums import (
     WorkStatus,
@@ -35,7 +39,7 @@ class EmailIngestionService:
 
     def __init__(
         self,
-        store: InMemoryStore,
+        store: StoreProtocol,
         rules_engine: RulesEngine,
         clock,
     ):
@@ -45,6 +49,7 @@ class EmailIngestionService:
 
         self.normalizer = EmailNormalizer()
         self.classifier = ClassificationService(store)
+        self.classification_decider = ClassificationDecisionEngine()
 
         # Pendências para o ClassificationPortal
         self.pending_classifications: List[Dict] = []
@@ -54,10 +59,6 @@ class EmailIngestionService:
     # ------------------------------------------------------------------
 
     def ingest(self, raw_email: dict) -> None:
-        """
-        Ingestão completa de um e-mail cru.
-        """
-
         now = self.clock.now()
 
         # 1️⃣ Normalizar
@@ -69,37 +70,36 @@ class EmailIngestionService:
             print("🧠 CONTINUIDADE APLICADA")
             print(f"   • case_id: {continuation.id}")
             print(f"   • motivo: thread_id ou heurística")
-            synthetic_result = ClassificationResult(
-                action="attach_existing",
-                case_id=continuation.id,
-                confidence=0.6,
-                rationale="Continuidade por thread_id ou heurística recente.",
-            )
-            self._attach_to_case(email, synthetic_result, now)
+
+            self._attach_to_case_by_id(email, continuation.id, now)
             return
 
         print("🧠 SEM CONTINUIDADE — A CLASSIFICAR")
 
-        # 3️⃣ Se NÃO há continuidade, aplicar regras de contexto
+        # 3️⃣ Casos pessoais não entram no fluxo
         if email.context == "personal":
             self._create_personal_case(email)
             return
 
-        # 4️⃣ Classificar
+        # 4️⃣ Avaliar (factos)
         result = self.classifier.classify(email)
 
-        # 5️⃣ Decidir caminho
-        if result.action == "attach_existing":
-            self._attach_to_case(email, result, now)
+        # 5️⃣ Decidir (política)
+        decision = self.classification_decider.decide(result)
 
-        elif result.action == "create_new":
-            self._create_new_case(email, result, now)
+        # 6️⃣ Executar decisão
+        if decision.action == "attach_existing":
+            self._attach_to_case_by_id(email, decision.case_id, now)
 
-        elif result.action == "ask_user":
-            self._enqueue_pending(email, result, now)
+        elif decision.action == "create_new":
+            self._create_new_case(email, decision, now)
+
+        elif decision.action == "ask_user":
+            self._enqueue_pending(email, decision, now)
 
         else:
-            raise RuntimeError(f"Ação de classificação desconhecida: {result.action}")
+            raise RuntimeError(f"Decisão desconhecida: {decision.action}")
+
 
     # ------------------------------------------------------------------
     # Caminhos
@@ -127,20 +127,14 @@ class EmailIngestionService:
 
         # ❗ NOTA: casos pessoais não disparam rules_engine
 
-    def _attach_to_case(
+    def _attach_to_case_by_id(
         self,
         email: NormalizedEmail,
-        result: ClassificationResult,
+        case_id: str,
         now: datetime,
     ) -> None:
-        """
-        Anexa e-mail a um Caso existente e dispara evento.
-        """
-
-        case = self.store.get_case(result.case_id)
+        case = self.store.get_case(case_id)
         if not case:
-            # fallback defensivo
-            self._create_new_case(email, result, now)
             return
 
         self.rules_engine.handle_event(
@@ -151,7 +145,6 @@ class EmailIngestionService:
                 "thread_id": email.thread_id,
                 "from": email.from_address,
                 "subject": email.subject,
-                "confidence": result.confidence,
             },
             now=now,
         )
@@ -159,7 +152,7 @@ class EmailIngestionService:
     def _create_new_case(
         self,
         email: NormalizedEmail,
-        result: ClassificationResult,
+        decision: ClassificationDecision,
         now: datetime,
     ) -> None:
         """
@@ -187,7 +180,7 @@ class EmailIngestionService:
                 "thread_id": email.thread_id,
                 "from": email.from_address,
                 "subject": email.subject,
-                "confidence": result.confidence,
+                "confidence": decision.confidence,
             },
             now=now,
         )
@@ -195,23 +188,19 @@ class EmailIngestionService:
     def _enqueue_pending(
         self,
         email: NormalizedEmail,
-        result: ClassificationResult,
+        decision: ClassificationDecision,
         now: datetime,
     ) -> None:
-        """
-        Guarda classificação pendente para decisão humana.
-        """
-
         suggested_case = (
-            self.store.get_case(result.case_id)
-            if result.case_id
+            self.store.get_case(decision.case_id)
+            if decision.case_id
             else None
         )
 
         self.pending_classifications.append(
             {
                 "email": email,
-                "result": result,
+                "decision": decision,
                 "suggested_case": suggested_case,
                 "created_at": now,
             }

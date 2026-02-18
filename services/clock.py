@@ -1,10 +1,16 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
 
 class Clock:
     """
-    Fonte única de tempo do sistema.
-    Sempre UTC e timezone-aware.
+    Relógio controlável para simulação.
     """
 
+    def __init__(self):
+        self._now = datetime.now(timezone.utc)
+
     def now(self) -> datetime:
-        return datetime.now(timezone.utc)
+        return self._now
+
+    def advance(self, delta: timedelta) -> None:
+        self._now += delta

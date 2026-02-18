@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Workflow — DASH 2</title>
+
+    <style>
+        body { font-family: sans-serif; margin: 0; }
+        .layout { display: flex; height: 100vh; }
+
+        .col { padding: 20px; overflow-y: auto; }
+        .cases { width: 25%; border-right: 1px solid #ccc; }
+        .timeline { width: 45%; border-right: 1px solid #ccc; }
+        .actions { width: 30%; }
+
+        .case {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-left: 4px solid transparent;
+        }
+
+        .case:hover {
+            background: #f5f7ff;
+        }
+
+        .selected {
+            background: #eef3ff;
+            border-left: 4px solid #4a6cff;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .muted { color: #777; }
+        a { text-decoration: none; color: black; }
+        button { margin-right: 6px; margin-bottom: 6px; }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- CASOS -->
+    <div class="col cases">
+        <h2>📂 Casos</h2>
+
+        <a href="/sim/email/inbound"><button>📩 Email inbound</button></a>
+        <a href="/sim/time/7"><button>⏱️ +7 dias</button></a>
+        <a href="/sim/time/30"><button>⏱️ +30 dias</button></a>
+
+        <hr>
+
+        {% for case in cases %}
+        <a href="/?case={{ case.id }}">
+            <div class="case {% if selected_case and case.id == selected_case.id %}selected{% endif %}">
+                <strong>{{ case.title }}</strong>
+                {% if case.id in attention_case_ids %}
+                    ⚠️
+                {% endif %}
+                <br>
+                <span class="muted">
+                    {{ case.status }} · {{ case.priority }}
+                </span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="col timeline">
+        <h2>📜 Timeline</h2>
+
+        {% if not selected_case %}
+            <p class="muted">Selecciona um caso</p>
+        {% else %}
+            <h3>{{ selected_case.title }}</h3>
+
+            <a href="/sim/email/outbound/{{ selected_case.id }}">
+                <button>📤 Responder ao cliente</button>
+            </a>
+
+            <hr>
+
+            {% for event in selected_case.timeline %}
+            <div class="card">
+                {% if event.type.name == "EMAIL_INBOUND" %}
+                    📩 Email recebido
+                {% elif event.type.name == "EMAIL_OUTBOUND" %}
+                    📤 Email enviado
+                {% elif event.type.name == "TIME_PASSED" %}
+                    ⏱️ Tempo passou ({{ event.context.days }} dias)
+                {% elif event.type.name == "USER_ACTION" %}
+                    🧠 Decisão: {{ event.context.decision }}
+                {% else %}
+                    🔹 {{ event.type.name }}
+                {% endif %}
+                <br>
+                <span class="muted">{{ event.timestamp }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- DECISÕES -->
+    <div class="col actions">
+        <h2>⚠️ Decisões</h2>
+
+        {% if not selected_case %}
+            <p class="muted">Selecciona um caso</p>
+        {% endif %}
+
+        {% for item in attention %}
+            {% if selected_case and item.case_id == selected_case.id %}
+            <div class="card">
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        {% for item in billing %}
+            {% if selected_case and item.case_id == selected_case.id %}
+            <div class="card">
+                <strong>💰 {{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+                <form method="post" action="/decision">
+                    <input type="hidden" name="portal" value="billing">
+                    <input type="hidden" name="case_id" value="{{ item.case_id }}">
+                    <button name="action" value="to_bill">Faturar</button>
+                    <button name="action" value="dont_bill">Não faturar</button>
+                </form>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        {% for item in classifications %}
+            {% if selected_case and item.case_id == selected_case.id %}
+            <div class="card">
+                <strong>📌 {{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+                <form method="post" action="/decision">
+                    <input type="hidden" name="portal" value="classification">
+                    <button name="action" value="confirm">Confirmar</button>
+                </form>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+</div>
+
+</body>
+</html>

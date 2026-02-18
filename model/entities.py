@@ -1,3 +1,5 @@
+#model/entities.py
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -78,14 +80,14 @@ class ActivitySummary:
     inbound_emails: int = 0
     outbound_emails: int = 0
     notes: int = 0
-    tasks_completed: int = 0
 
     def is_significant(self) -> bool:
         """
-        Heurística mínima para decidir se merece atenção.
+        Actividade significativa é comunicação real,
+        não passagem do tempo nem notas internas.
         """
         return (
             self.inbound_emails > 0
             or self.outbound_emails > 0
-            or self.tasks_completed > 0
         )
+

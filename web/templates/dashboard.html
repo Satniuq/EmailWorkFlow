@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Workflow</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        h2 { margin-top: 40px; }
+        .card { border: 1px solid #ccc; padding: 16px; margin-bottom: 16px; }
+        .empty { color: #777; }
+        .sim { margin-bottom: 24px; padding: 16px; background: #f5f5f5; }
+        .case { padding: 8px; border-bottom: 1px solid #eee; }
+        button { margin-right: 8px; }
+        small { color: #555; }
+    </style>
+</head>
+<body>
+
+<h1>📬 Email Workflow — Dashboard</h1>
+<p><small>⏱️ Agora: {{ now }}</small></p>
+
+<!-- ============================= -->
+<!-- SIMULAÇÃO -->
+<!-- ============================= -->
+
+<div class="sim">
+    <strong>🧪 Simulação</strong><br><br>
+
+    <a href="/sim/email/inbound">
+        <button>📩 Email inbound (novo)</button>
+    </a>
+
+    <a href="/sim/email/inbound/ambiguous">
+        <button>❓ Email ambíguo</button>
+    </a>
+
+    <a href="/sim/time/3">
+        <button>⏱️ +3 dias</button>
+    </a>
+
+    <a href="/sim/time/7">
+        <button>⏱️ +7 dias</button>
+    </a>
+
+    <a href="/sim/time/30">
+        <button>⏱️ +30 dias</button>
+    </a>
+</div>
+
+<!-- ============================= -->
+<!-- CASOS -->
+<!-- ============================= -->
+
+<h2>📂 Casos</h2>
+
+{% if not cases %}
+<p class="empty">Nenhum caso criado.</p>
+{% endif %}
+
+{% for case in cases %}
+<div class="case">
+    <strong>{{ case.title }}</strong><br>
+    <small>
+        id: {{ case.id }} |
+        status: {{ case.status }} |
+        prioridade: {{ case.priority }}
+    </small><br><br>
+
+    <a href="/sim/email/outbound/{{ case.id }}">
+        <button>📤 Responder ao cliente</button>
+    </a>
+</div>
+{% endfor %}
+
+<!-- ============================= -->
+<!-- ATENÇÃO -->
+<!-- ============================= -->
+
+<h2>⚠️ Atenção</h2>
+
+{% if not attention and not billing and not classifications %}
+<p class="empty">✔️ Tudo em silêncio</p>
+{% endif %}
+
+{% for item in attention %}
+<div class="card">
+    <strong>{{ item.title }}</strong>
+    <p>{{ item.description }}</p>
+</div>
+{% endfor %}
+
+<!-- ============================= -->
+<!-- BILLING -->
+<!-- ============================= -->
+
+{% for item in billing %}
+<div class="card">
+    <strong>💰 {{ item.title }}</strong>
+    <p>{{ item.description }}</p>
+
+    <form method="post" action="/decision">
+        <input type="hidden" name="portal" value="billing">
+        <input type="hidden" name="case_id" value="{{ item.case_id }}">
+        <button name="action" value="to_bill">Faturar</button>
+        <button name="action" value="dont_bill">Não faturar</button>
+    </form>
+</div>
+{% endfor %}
+
+<!-- ============================= -->
+<!-- CLASSIFICAÇÃO -->
+<!-- ============================= -->
+
+{% for item in classifications %}
+<div class="card">
+    <strong>📌 {{ item.title }}</strong>
+    <p>{{ item.description }}</p>
+
+    <form method="post" action="/decision">
+        <input type="hidden" name="portal" value="classification">
+        <button name="action" value="confirm">Confirmar</button>
+    </form>
+</div>
+{% endfor %}
+
+</body>
+</html>

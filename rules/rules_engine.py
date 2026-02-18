@@ -60,27 +60,83 @@ class RulesEngine:
     ) -> None:
         """
         Ponto único de entrada para eventos no sistema.
+        Aplica o pipeline completo e explícito.
         """
 
         now = now or Clock().now()
         event_context = event_context or {}
 
-        # 1️⃣ Registo factual
-        self._record_case_item(case, event_type, event_context, now)
+        # 1️⃣ Registo factual (factos, não decisões)
+        self._phase_record_facts(case, event_type, event_context, now)
 
-        # 2️⃣ Transição de estado
+        # 2️⃣ Transição de estado (State Machine)
+        self._phase_state_transition(case, event_type)
+
+        # 3️⃣ Semântica do evento (efeitos imediatos)
+        self._phase_event_semantics(case, event_type, event_context, now)
+
+        # 4️⃣ Regras de atenção (derivadas, nunca decisivas)
+        self._phase_attention(case, now)
+
+        # 5️⃣ Regras de billing (sugestão, não decisão)
+        self._phase_billing(case, event_type, now)
+
+        # 6️⃣ Actualização temporal do Caso
+        if event_type != CaseEventType.TIME_PASSED:
+            case.updated_at = now
+
+
+    # ------------------------------------------------------------------
+    # MÉTODOS PRIVADOS
+    # ------------------------------------------------------------------
+
+    def _phase_record_facts(
+        self,
+        case: Case,
+        event_type: CaseEventType,
+        context: dict,
+        now: datetime,
+    ) -> None:
+        self._record_case_item(case, event_type, context, now)
+
+
+    def _phase_state_transition(
+        self,
+        case: Case,
+        event_type: CaseEventType,
+    ) -> None:
         self.state_machine.apply(case, event_type)
 
-        # 3️⃣ Semântica do evento
-        self._apply_event_semantics(case, event_type, event_context, now)
 
-        # 4️⃣ Regras de atenção (sempre)
+    def _phase_event_semantics(
+        self,
+        case: Case,
+        event_type: CaseEventType,
+        context: dict,
+        now: datetime,
+    ) -> None:
+        self._apply_event_semantics(case, event_type, context, now)
+
+
+    def _phase_attention(
+        self,
+        case: Case,
+        now: datetime,
+    ) -> None:
         self._apply_attention_rules(case, now)
 
-        # 5️⃣ Regras de billing (SÓ se não for decisão humana)
+
+    def _phase_billing(
+        self,
+        case: Case,
+        event_type: CaseEventType,
+        now: datetime,
+    ) -> None:
         spec = CASE_EVENTS[event_type.name]
-        if EventSemantic.BILLING_DECISION not in spec.semantics:
-            self._apply_billing_rules(case, now)
+        if EventSemantic.BILLING_DECISION in spec.semantics:
+            return
+
+        self._apply_billing_rules(case, now)
 
 
     # ------------------------------------------------------------------
@@ -210,9 +266,6 @@ class RulesEngine:
     # ------------------------------------------------------------------
     # REGRAS DE BILLING
     # ------------------------------------------------------------------
-
-    
-
 
     def _apply_billing_decision(
         self,
