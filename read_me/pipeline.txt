@@ -1,3 +1,5 @@
+PIPELINE BRUTO
+
 Email cru
  → EmailNormalizer
    → NormalizedEmail

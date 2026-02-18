@@ -1,0 +1,16 @@
+CORRER TUDO:
+
+    python -m pytest -s
+
+CORRER PASTAS:
+
+
+    python -m pytest tests/vocabulary -s
+
+    python -m pytest tests/invariants -s
+
+    python -m pytest tests/boundaries -s
+
+    python -m pytest tests/regression -s
+
+    python -m pytest tests/flows -s
